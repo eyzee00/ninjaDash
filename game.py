@@ -1,4 +1,6 @@
+#!/usr/bin/env python
 # import the pygame module, so you can use it
+
 import sys
 import pygame
 from scripts.tilemap import Tilemap
@@ -48,6 +50,7 @@ class Game:
 
         self.tilemap = Tilemap(self, 16)
 
+        self.tilemap.load('map.json')
         self.clouds = Clouds(self.assets['clouds'], count=16)
 
         self.scroll = [0, 0]

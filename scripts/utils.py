@@ -21,7 +21,7 @@ def load_images(path):
     images = []
 
     # loop through the files in the specified path
-    for image_name in os.listdir(BASE_PATH + path):
+    for image_name in sorted(os.listdir(BASE_PATH + path)):
         # load each image and append it to the list
         images.append(load_img(path + '/' + image_name))
     

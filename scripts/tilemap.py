@@ -2,12 +2,25 @@
 # it also contains methods to get the neighboring tiles and their rects for collision detection.
 # collision detection with the player entity is done in the PhysicsEntity class.
 import pygame
+import json
+
+AUTOTILE_MAP = {
+    tuple(sorted([(1, 0), (0, 1)])): 0,
+    tuple(sorted([(1, 0), (0, 1), (-1, 0)])): 1,
+    tuple(sorted([(-1, 0), (0, 1)])): 2, 
+    tuple(sorted([(-1, 0), (0, -1), (0, 1)])): 3,
+    tuple(sorted([(-1, 0), (0, -1)])): 4,
+    tuple(sorted([(-1, 0), (0, -1), (1, 0)])): 5,
+    tuple(sorted([(1, 0), (0, -1)])): 6,
+    tuple(sorted([(1, 0), (0, -1), (0, 1)])): 7,
+    tuple(sorted([(1, 0), (-1, 0), (0, 1), (0, -1)])): 8,
+}
 
 # define the neighboring offset list containing the relative positions of the neighboring tiles to a tile
 NEIGHBORING_OFFSET = [(-1, 0), (-1, -1), (0, -1), (1, -1), (1, 0), (0, 0), (-1, 1), (0, 1), (1, 1)]
 # define the collidable tiles set containing the tile types that the player can collide with
 COLLIDABLE_TILES = {'grass', 'stone'}
-
+AUTOTILABLE_TILES = {'grass', 'stone'}
 # define the Tilemap class
 class Tilemap:
     # define the constructor
@@ -18,13 +31,6 @@ class Tilemap:
         self.tilemap = {}
         # create a list to store the offgrid tiles
         self.offgrid_tiles = []
-
-    # define a method to generate the tilemap
-        for i in range(10):
-            # add a grass tile to the tilemap at the specified horizontal position
-            self.tilemap[str(3 + i) + ';10'] = {'type': 'grass', 'variant': 3, 'pos': (3 + i, 10)}
-            # add a stone tile to the tilemap at the specified vertical position
-            self.tilemap['10;' + str(5 + i)] = {'type': 'stone', 'variant': 0, 'pos': (10, 5 + i)}
 
     # define a method to get the neighboring tiles relative to a specific position
     def tiles_around(self, pos):
@@ -43,6 +49,32 @@ class Tilemap:
 
         # return the neighboring tiles
         return neighboring_tiles
+
+    def save(self, path):
+        file = open(path, 'w')
+        json.dump({'tilemap': self.tilemap, 'tile_size': self.tile_size, 'offgrid_tiles': self.offgrid_tiles}, file)
+        file.close()
+
+    def load(self, path):
+        file = open(path, 'r')
+        loaded_data = json.load(file)
+        file.close()
+        self.tilemap = loaded_data['tilemap']
+        self.tile_size = loaded_data['tile_size']
+        self.offgrid_tiles = loaded_data['offgrid_tiles']
+
+    def autotile(self):
+        for loc in self.tilemap:
+            tile = self.tilemap[loc]
+            neighbors = set()
+            for shift in [(1, 0), (-1, 0), (0, -1), (0, 1)]:
+                check_loc = str(tile['pos'][0] + shift[0]) + ';' + str(tile['pos'][1] + shift[1])
+                if check_loc in self.tilemap:
+                    if self.tilemap[check_loc]['type'] == tile['type']:
+                        neighbors.add(shift)
+            neighbors = tuple(sorted(neighbors))
+            if (tile['type'] in AUTOTILABLE_TILES) and (neighbors in AUTOTILE_MAP):
+                tile['variant'] = AUTOTILE_MAP[neighbors]
 
     # define a method to get the neighboring tiles's rects for collision detection
     def neighboring_tiles_physics(self, pos):
@@ -63,7 +95,7 @@ class Tilemap:
         # loop through the offgrid tiles to render them
         for tile in self.offgrid_tiles:
             # get the asset from the game assets dictionary using the tile type and variant
-            surface.blit(self.game.assets[tile['type']][tile['variant']], tile['pos'][0] - offset[0], tile['pos'][1] - offset[1])
+            surface.blit(self.game.assets[tile['type']][tile['variant']], (tile['pos'][0] - offset[0], tile['pos'][1] - offset[1]))
         
         for x in range(offset[0] // self.tile_size, (offset[0] + surface.get_width()) // self.tile_size + 1):
             for y in range(offset[1] // self.tile_size, (offset[1] + surface.get_height()) // self.tile_size + 1):

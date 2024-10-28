@@ -20,6 +20,7 @@ class PhysicsEntity:
         # create a dictionary to store the collision flags to keep track of the collisions
         self.collision_flags = {'up': False, 'down': False, 'right': False, 'left': False}
 
+        
         self.action = ''
         self.anim_offset = (-3, -3)
         self.flip = False
@@ -86,9 +87,13 @@ class PhysicsEntity:
                 # set the entity's position to the adjusted position of the entity's rect
                 self.pos[1] = entity_rect.y
 
+        # check if the entity is moving in the right direction in the x axis
         if movement[0] > 0:
+            # if so set the flip flag to False
             self.flip = False
+        # check if the entity is moving in the left direction in the x axis
         if movement[0] < 0:
+            # if so set the flip flag to True
             self.flip = True
 
         # apply gravity to the entity by increasing the y velocity
@@ -100,24 +105,40 @@ class PhysicsEntity:
             self.velocity[1] = 0
         self.animation.update()
 
+    # define a method to render the entity
     def render(self, surface, offset=(0, 0)):
+        # blit the entity's image to the screen at the entity's position
+        # if the entity is facing left, flip the image horizontally else render the image normally
+        # blit the entity at the position with the animation offset and the camera offset taken into account
         surface.blit(pygame.transform.flip(self.animation.img(), self.flip, False), (self.pos[0] - offset[0] + self.anim_offset[0], self.pos[1] - offset[1] + self.anim_offset[1]))
-        #surface.blit(self.game.assets['player'], (self.pos[0] - offset[0], self.pos[1] - offset[1]))
 
+# define the Player class that inherits from the PhysicsEntity class
 class Player(PhysicsEntity):
+    # define the constructor with the game, position, and size as parameters
     def __init__(self, game, pos, size):
+        # call the constructor of the parent class
         super().__init__(game, 'player', pos, size)
+        # set the player's air time to 0
         self.air_time = 0
     
+    # define the update method to update the player's position
     def update(self, tilemap, movement=(0, 0)):
+        # call the update method of the parent class
         super().update(tilemap, movement=movement)
-
+ 
         self.air_time += 1
+        # check if the player is on the ground
         if self.collision_flags['down']:
+            # if so set the air time to 0
             self.air_time = 0
+        # check if the player is in the air
         if self.air_time > 4:
+            # if so set the player's action to jump
             self.set_action('jump')
+        # if the player is moving in the x direction and is on the ground
         elif movement[0] != 0:
+            # set the player's action to run
             self.set_action('run')
         else:
+            # if the player is not moving in the x direction and not in the air set the player's action to idle
             self.set_action('idle')
