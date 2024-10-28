@@ -50,10 +50,37 @@ class Tilemap:
         # return the neighboring tiles
         return neighboring_tiles
 
+    def extract(self, id_pairs, keep=False):
+        matches = []
+        for tile in self.offgrid_tiles.copy():
+            if (tile['type'], tile['variant']) in id_pairs:
+                matches.append(tile.copy())
+
+                if not keep:
+                    self.offgrid_tiles.remove(tile)
+
+        for location in self.tilemap:
+            tile = self.tilemap[location]
+            if (tile['type'], tile['variant']) in id_pairs:
+                matches.append(tile.copy())
+                matches[-1]['pos'] = matches[-1]['pos'].copy()
+                matches[-1]['pos'][0] *= self.tile_size
+                matches[-1]['pos'][1] *= self.tile_size
+                if not keep:
+                    del self.tilemap[location]
+        return matches
+
     def save(self, path):
         file = open(path, 'w')
-        json.dump({'tilemap': self.tilemap, 'tile_size': self.tile_size, 'offgrid_tiles': self.offgrid_tiles}, file)
+        json.dump({'tilemap': self.tilemap, 'tile_size': self.tile_size, 'offgrid': self.offgrid_tiles}, file)
         file.close()
+
+
+    def check_solid(self, pos):
+        checked_location = str(int(pos[0] // self.tile_size)) + ';' + str(int(pos[1] // self.tile_size))
+        if checked_location in self.tilemap:
+            if self.tilemap[checked_location]['type'] in COLLIDABLE_TILES:
+                return self.tilemap[checked_location]
 
     def load(self, path):
         file = open(path, 'r')
@@ -61,7 +88,7 @@ class Tilemap:
         file.close()
         self.tilemap = loaded_data['tilemap']
         self.tile_size = loaded_data['tile_size']
-        self.offgrid_tiles = loaded_data['offgrid_tiles']
+        self.offgrid_tiles = loaded_data['offgrid']
 
     def autotile(self):
         for loc in self.tilemap:
